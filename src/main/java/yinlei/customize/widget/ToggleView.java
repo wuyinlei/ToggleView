@@ -5,9 +5,15 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.v7.widget.TintTypedArray;
 import android.util.AttributeSet;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+
+import yinlei.customize.R;
 
 /**
  * Created by wuyin on 2016/5/16.
@@ -39,6 +45,7 @@ public class ToggleView extends View {
 
     //开关状态  默认关闭
     private boolean mSwitchState = false;
+
     private float currentX;
 
     /**
@@ -71,11 +78,22 @@ public class ToggleView extends View {
     public ToggleView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
+        if (attrs != null) {
+            String namespace = "http://schemas.android.com/apk/res-auto";
+            int switchBackgroundResource = attrs.getAttributeResourceValue(namespace,"switch_background",-1);
+            int slideButtonResource = attrs.getAttributeResourceValue(namespace,"slide_button",-1);
+            mSwitchState = attrs.getAttributeBooleanValue(namespace,"switch_state",false);
+
+            setSwitchBackground(switchBackgroundResource);
+            setSlideButtonResource(slideButtonResource);
+        }
+
         init();
     }
 
     private void init() {
         mPaint = new Paint();
+
     }
 
 
@@ -169,7 +187,18 @@ public class ToggleView extends View {
                 isTouchState = false;
                 currentX = event.getX();
                 float center = switchBackground.getWidth() / 2;
-                mSwitchState = currentX > center;
+
+                boolean state = currentX > center;
+
+                //如果开关状态变化了，通知界面
+                if (state != mSwitchState && mListener != null) {
+                    //把最先的状态传递进去
+                    mListener.onStateUpdate(state);
+                }
+
+                mSwitchState = state;
+
+
                 break;
             default:
 
@@ -180,5 +209,19 @@ public class ToggleView extends View {
         invalidate();  //会引发onDraw被调用
 
         return true;  //处理触摸事件，不传递
+    }
+
+    private OnSwitchStateUpdateClickListener mListener;
+
+
+    public void setOnSwitchStateUpdateListener(OnSwitchStateUpdateClickListener stateUpdateListener) {
+        mListener = stateUpdateListener;
+    }
+
+    //设置点击监听回调
+
+    public interface OnSwitchStateUpdateClickListener {
+        //状态的传出
+        void onStateUpdate(boolean state);
     }
 }
