@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 
 /**
@@ -20,7 +21,9 @@ import android.view.View;
  * View中
  * <p/>
  * onMeasure(在这个方法中指定自己的宽高)onSizeChanged（这个方法也是可以的）
+ * <p/>
  * onLayout（摆放自己的位置）
+ * <p/>
  * onDraw(绘制)
  */
 public class ToggleView extends View {
@@ -36,6 +39,7 @@ public class ToggleView extends View {
 
     //开关状态  默认关闭
     private boolean mSwitchState = false;
+    private float currentX;
 
     /**
      * 用于代码创建控件
@@ -113,9 +117,23 @@ public class ToggleView extends View {
         //1、绘制背景
         canvas.drawBitmap(switchBackground, 0, 0, mPaint);
 
+        //根据当前用户的触摸位置来画
+        if (isTouchState) {
+            //让滑块向左绘制自身大小的一半
+            float newLeft = (float) (currentX - slideButton.getWidth() / 2.0);
+            int maxRight = switchBackground.getWidth() - slideButton.getWidth();
+            //限定滑块的范围
+            if (newLeft < 0) {
+                newLeft = 0;  //最左边范围
+            }
+            if (newLeft > maxRight) {
+                newLeft = maxRight;   //最右边范围
+            }
+            canvas.drawBitmap(slideButton, newLeft, 0, mPaint);
 
-        //根据开关状态直接设置图片的位置
-        if (mSwitchState) {
+        } else if (mSwitchState) {
+
+            //根据开关状态直接设置图片的位置
             int newLeft = switchBackground.getWidth() - slideButton.getWidth();
             canvas.drawBitmap(slideButton, newLeft, 0, mPaint);
         } else {
@@ -123,5 +141,44 @@ public class ToggleView extends View {
             canvas.drawBitmap(slideButton, 0, 0, mPaint);
         }
 
+    }
+
+    boolean isTouchState = false;
+
+    /**
+     * 重写触摸事件，响应用户的手势
+     *
+     * @param event
+     * @return
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+
+                currentX = event.getX();
+                isTouchState = true;
+
+                break;
+            case MotionEvent.ACTION_MOVE:
+                isTouchState = true;
+                currentX = event.getX();
+                break;
+            case MotionEvent.ACTION_UP:
+                isTouchState = false;
+                currentX = event.getX();
+                float center = switchBackground.getWidth() / 2;
+                mSwitchState = currentX > center;
+                break;
+            default:
+
+                break;
+        }
+
+        //重绘界面
+        invalidate();  //会引发onDraw被调用
+
+        return true;  //处理触摸事件，不传递
     }
 }
